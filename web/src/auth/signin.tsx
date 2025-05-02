@@ -1,7 +1,6 @@
-import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { useNavigate } from 'react-router'
 import { useForm } from 'react-hook-form'
+import { Link, useNavigate } from 'react-router'
 import {
 	Box,
 	Button,
@@ -10,34 +9,31 @@ import {
 	FormControl,
 	FormHelperText,
 	FormLabel,
-	IconButton,
 	Input,
 	Sheet,
 	Stack,
 	Typography
 } from '@mui/joy'
 
-import PersonAdd from '@mui/icons-material/PersonAdd'
 import Email from '@mui/icons-material/Email'
 import Lock from '@mui/icons-material/Lock'
-import Person from '@mui/icons-material/Person'
-import Error from '@mui/icons-material/Error'
-import VisibilityOff from '@mui/icons-material/VisibilityOff'
-import Visibility from '@mui/icons-material/Visibility'
+import Login from '@mui/icons-material/Login'
 
-interface SignupError {
+import { useAuth } from './authContext'
+
+interface SigninError {
 	type: string
-	errors?: Record<string, string[]>
 	title?: string
+	errors?: Record<string, string[]>
 }
 
-export const Signup = () => {
-	const [passwordVisible, setPasswordVisible] = useState(false)
+export const Signin = () => {
 	const navigate = useNavigate()
+	const { setToken } = useAuth()
 
 	const mutation = useMutation({
 		mutationFn: async (data: any) => {
-			const response = await fetch('/api/auth/signup', {
+			const response = await fetch('/api/auth/signin', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
@@ -53,19 +49,15 @@ export const Signup = () => {
 
 			return responseData
 		},
-		onSuccess: () => {
-			navigate('/signin')
+		onSuccess: data => {
+			setToken(data.token)
+			navigate('/home')
 		},
-		onError: (error: SignupError) => {
-			if (error.type === 'email_already_exists') {
-				form.setError('email', {
+		onError: (error: SigninError) => {
+			if (error.type === 'invalid_credentials') {
+				form.setError('root', {
 					type: 'manual',
-					message: 'Email already exists'
-				})
-			} else if (error.type === 'username_already_exists') {
-				form.setError('username', {
-					type: 'manual',
-					message: 'Username already exists'
+					message: 'Invalid email or password'
 				})
 			} else if (error.type === 'validation_error' && error.errors) {
 				Object.entries(error.errors).forEach(([field, messages]) => {
@@ -75,10 +67,9 @@ export const Signup = () => {
 					})
 				})
 			} else {
-				// Handle other errors
 				form.setError('root', {
 					type: 'manual',
-					message: error.title || 'An error occurred during signup'
+					message: error.title || 'An error occurred during signin'
 				})
 			}
 		}
@@ -86,7 +77,6 @@ export const Signup = () => {
 
 	const form = useForm({
 		defaultValues: {
-			username: '',
 			email: '',
 			password: ''
 		}
@@ -116,11 +106,11 @@ export const Signup = () => {
 					}}
 				>
 					<Box sx={{ textAlign: 'center', mb: 3 }}>
-						<PersonAdd
-							sx={{ fontSize: 60, color: 'primary.500', mb: 1 }}
+						<Login
+							sx={{ fontSize: 40, color: 'primary.500', mb: 1 }}
 						/>
 						<Typography level='h4' component='h1'>
-							Create Account
+							Sign In
 						</Typography>
 					</Box>
 
@@ -133,27 +123,6 @@ export const Signup = () => {
 						<Stack gap={3}>
 							<FormControl
 								size='lg'
-								error={Boolean(form.formState.errors.username)}
-							>
-								<FormLabel>Username</FormLabel>
-								<Input
-									{...form.register('username')}
-									startDecorator={<Person />}
-								/>
-								<FormHelperText
-									component={Typography}
-									level='title-lg'
-									startDecorator={
-										form.formState.errors.username ? (
-											<Error />
-										) : null
-									}
-								>
-									{form.formState.errors.username?.message}
-								</FormHelperText>
-							</FormControl>
-							<FormControl
-								size='lg'
 								error={Boolean(form.formState.errors.email)}
 							>
 								<FormLabel>Email</FormLabel>
@@ -161,15 +130,7 @@ export const Signup = () => {
 									{...form.register('email')}
 									startDecorator={<Email />}
 								/>
-								<FormHelperText
-									component={Typography}
-									level='title-lg'
-									startDecorator={
-										form.formState.errors.email ? (
-											<Error />
-										) : null
-									}
-								>
+								<FormHelperText>
 									{form.formState.errors.email?.message}
 								</FormHelperText>
 							</FormControl>
@@ -181,32 +142,9 @@ export const Signup = () => {
 								<Input
 									{...form.register('password')}
 									startDecorator={<Lock />}
-									endDecorator={
-										<IconButton
-											onClick={() =>
-												setPasswordVisible(
-													!passwordVisible
-												)
-											}
-										>
-											{passwordVisible ? (
-												<Visibility />
-											) : (
-												<VisibilityOff />
-											)}
-										</IconButton>
-									}
-									type={passwordVisible ? 'text' : 'password'}
+									type='password'
 								/>
-								<FormHelperText
-									component={Typography}
-									level='title-lg'
-									startDecorator={
-										form.formState.errors.password ? (
-											<Error />
-										) : null
-									}
-								>
+								<FormHelperText>
 									{form.formState.errors.password?.message}
 								</FormHelperText>
 							</FormControl>
@@ -215,17 +153,17 @@ export const Signup = () => {
 								size='lg'
 								loading={mutation.isPending}
 							>
-								Signup
+								Signin
 							</Button>
-							<Button
-								onClick={() => navigate('/signin')}
-								component='a'
-								href='/signin'
-								variant='plain'
-								color='neutral'
-							>
-								Already have an account? Sign in
-							</Button>
+							<Typography level='body-sm' textAlign='center'>
+								Don't have an account yet?{' '}
+								<Link
+									to='/signup'
+									style={{ textDecoration: 'none' }}
+								>
+									Create an account
+								</Link>
+							</Typography>
 						</Stack>
 					</form>
 				</Sheet>

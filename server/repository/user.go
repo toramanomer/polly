@@ -26,3 +26,7 @@ func NewUser(params NewUserParams) *User {
 		PasswordHash: params.Password.Hash(),
 	}
 }
+
+func (u *User) VerifyPassword(password primitives.Password) bool {
+	return password.Verify(u.PasswordHash)
+}

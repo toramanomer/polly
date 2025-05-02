@@ -44,24 +44,39 @@ func init() {
 }
 
 func main() {
-	db, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
+	// --------------------
+	// -- DB Setup
+	// --------------------
+	connString := os.Getenv("DATABASE_URL")
+	poolConfig, err := pgxpool.ParseConfig(connString)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatalf("Error parsing database URL: %v", err)
+	}
+
+	db, err := pgxpool.NewWithConfig(context.Background(), poolConfig)
+	if err != nil {
+		log.Fatalf("Error connecting to database: %v", err)
 	}
 	defer db.Close()
 
 	if err := db.Ping(context.Background()); err != nil {
-		log.Fatalf("Failed to ping database: %v", err)
+		log.Fatalf("Error pinging database: %v", err)
 	}
 
-	r := chi.NewRouter()
-	api := api.NewAPI(repository.NewRepository(db))
-	r.Post("/api/auth/signup", api.Signup)
+	var (
+		r   = chi.NewRouter()
+		api = api.NewAPI(repository.NewRepository(db))
+	)
+	r.Route("/api/auth", func(r chi.Router) {
+		r.Post("/signup", api.Signup)
+	})
 
 	var (
 		serverAddr = ":80"
 		server     = &http.Server{Addr: serverAddr, Handler: r}
 	)
 
-	server.ListenAndServe()
+	if err := server.ListenAndServe(); err != nil {
+		log.Fatalf("Error starting the HTTP server: %v", err)
+	}
 }

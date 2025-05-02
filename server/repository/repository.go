@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/toramanomer/polly/primitives"
 )
 
 type Repository struct {
@@ -48,4 +49,20 @@ func (r *Repository) CreateUser(ctx context.Context, user *User) error {
 	}
 
 	return err
+}
+
+func (r *Repository) GetUserByEmail(ctx context.Context, email primitives.Email) (*User, error) {
+	query := `
+		SELECT id, username, email, password_hash
+		FROM users
+		WHERE email = $1
+	`
+
+	var user User
+	err := r.db.QueryRow(ctx, query, email).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }
