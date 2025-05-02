@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/toramanomer/polly/api"
 	"github.com/toramanomer/polly/repository"
@@ -67,8 +68,13 @@ func main() {
 		r   = chi.NewRouter()
 		api = api.NewAPI(repository.NewRepository(db))
 	)
+
+	r.Use(middleware.Logger)
 	r.Route("/api/auth", func(r chi.Router) {
 		r.Post("/signup", api.Signup)
+		r.Post("/signin", api.Signin)
+		r.Post("/signout", api.Signout)
+		r.Get("/me", api.Me)
 	})
 
 	var (
