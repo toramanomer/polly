@@ -1,8 +1,15 @@
 package repository
 
 import (
+	"errors"
+
 	"github.com/google/uuid"
 	"github.com/toramanomer/polly/primitives"
+)
+
+var (
+	ErrEmailAlreadyExists    = errors.New("email already exists")
+	ErrUsernameAlreadyExists = errors.New("username already exists")
 )
 
 type User struct {

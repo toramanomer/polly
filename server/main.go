@@ -45,9 +45,7 @@ func init() {
 }
 
 func main() {
-	// --------------------
-	// -- DB Setup
-	// --------------------
+	// -------------------- DB Setup
 	connString := os.Getenv("DATABASE_URL")
 	poolConfig, err := pgxpool.ParseConfig(connString)
 	if err != nil {
@@ -63,18 +61,29 @@ func main() {
 	if err := db.Ping(context.Background()); err != nil {
 		log.Fatalf("Error pinging database: %v", err)
 	}
+	// --------------------
 
+	// -------------------- API Setup
 	var (
-		r   = chi.NewRouter()
-		api = api.NewAPI(repository.NewRepository(db))
+		r = chi.NewRouter()
+		a = api.NewAPI(repository.NewRepository(db))
 	)
 
 	r.Use(middleware.Logger)
 	r.Route("/api/auth", func(r chi.Router) {
-		r.Post("/signup", api.Signup)
-		r.Post("/signin", api.Signin)
-		r.Post("/signout", api.Signout)
-		r.Get("/me", api.Me)
+		r.Post("/signup", a.Signup)
+		r.Post("/signin", a.Signin)
+		r.Post("/signout", a.Signout)
+		r.Get("/me", a.Me)
+	})
+
+	r.Route("/api/polls", func(r chi.Router) {
+		withAuth := r.With(api.AuthMiddleware)
+		withAuth.Post("/", a.CreatePoll)
+		withAuth.Get("/", a.GetUserPolls)
+
+		r.Get("/{pollID}", a.GetPollByID)
+		r.Post("/{pollID}/vote", a.VoteOnPoll)
 	})
 
 	var (

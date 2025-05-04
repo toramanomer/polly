@@ -4,8 +4,6 @@ import { Link, useNavigate } from 'react-router'
 import {
 	Box,
 	Button,
-	CssBaseline,
-	CssVarsProvider,
 	FormControl,
 	FormHelperText,
 	FormLabel,
@@ -19,8 +17,6 @@ import Email from '@mui/icons-material/Email'
 import Lock from '@mui/icons-material/Lock'
 import Login from '@mui/icons-material/Login'
 
-import { useAuth } from './authContext'
-
 interface SigninError {
 	type: string
 	title?: string
@@ -29,7 +25,6 @@ interface SigninError {
 
 export const Signin = () => {
 	const navigate = useNavigate()
-	const { setToken } = useAuth()
 
 	const mutation = useMutation({
 		mutationFn: async (data: any) => {
@@ -50,8 +45,7 @@ export const Signin = () => {
 			return responseData
 		},
 		onSuccess: data => {
-			setToken(data.token)
-			navigate('/home')
+			navigate('/home', { replace: true })
 		},
 		onError: (error: SigninError) => {
 			if (error.type === 'invalid_credentials') {
@@ -87,87 +81,82 @@ export const Signin = () => {
 	}
 
 	return (
-		<CssVarsProvider defaultColorScheme='dark' defaultMode='dark'>
-			<CssBaseline />
-			<Box
+		<Box
+			sx={{
+				display: 'flex',
+				justifyContent: 'center',
+				alignItems: 'center',
+				height: '100vh'
+			}}
+		>
+			<Sheet
 				sx={{
-					display: 'flex',
-					justifyContent: 'center',
-					alignItems: 'center',
-					height: '100vh'
+					width: '500px',
+					maxWidth: '90vw',
+					p: 5,
+					borderRadius: 'md'
 				}}
 			>
-				<Sheet
-					sx={{
-						width: '500px',
-						maxWidth: '90vw',
-						p: 5,
-						borderRadius: 'md'
-					}}
-				>
-					<Box sx={{ textAlign: 'center', mb: 3 }}>
-						<Login
-							sx={{ fontSize: 40, color: 'primary.500', mb: 1 }}
-						/>
-						<Typography level='h4' component='h1'>
-							Sign In
-						</Typography>
-					</Box>
+				<Box sx={{ textAlign: 'center', mb: 3 }}>
+					<Login sx={{ fontSize: 40, color: 'primary.500', mb: 1 }} />
+					<Typography level='h4' component='h1'>
+						Sign In
+					</Typography>
+				</Box>
 
-					{form.formState.errors.root && (
-						<Typography color='danger' sx={{ mb: 2 }}>
-							{form.formState.errors.root.message}
+				{form.formState.errors.root && (
+					<Typography color='danger' sx={{ mb: 2 }}>
+						{form.formState.errors.root.message}
+					</Typography>
+				)}
+				<form onSubmit={form.handleSubmit(onSubmit)}>
+					<Stack gap={3}>
+						<FormControl
+							size='lg'
+							error={Boolean(form.formState.errors.email)}
+						>
+							<FormLabel>Email</FormLabel>
+							<Input
+								{...form.register('email')}
+								startDecorator={<Email />}
+							/>
+							<FormHelperText>
+								{form.formState.errors.email?.message}
+							</FormHelperText>
+						</FormControl>
+						<FormControl
+							size='lg'
+							error={Boolean(form.formState.errors.password)}
+						>
+							<FormLabel>Password</FormLabel>
+							<Input
+								{...form.register('password')}
+								startDecorator={<Lock />}
+								type='password'
+							/>
+							<FormHelperText>
+								{form.formState.errors.password?.message}
+							</FormHelperText>
+						</FormControl>
+						<Button
+							type='submit'
+							size='lg'
+							loading={mutation.isPending}
+						>
+							Signin
+						</Button>
+						<Typography level='body-sm' textAlign='center'>
+							Don't have an account yet?{' '}
+							<Link
+								to='/signup'
+								style={{ textDecoration: 'none' }}
+							>
+								Create an account
+							</Link>
 						</Typography>
-					)}
-					<form onSubmit={form.handleSubmit(onSubmit)}>
-						<Stack gap={3}>
-							<FormControl
-								size='lg'
-								error={Boolean(form.formState.errors.email)}
-							>
-								<FormLabel>Email</FormLabel>
-								<Input
-									{...form.register('email')}
-									startDecorator={<Email />}
-								/>
-								<FormHelperText>
-									{form.formState.errors.email?.message}
-								</FormHelperText>
-							</FormControl>
-							<FormControl
-								size='lg'
-								error={Boolean(form.formState.errors.password)}
-							>
-								<FormLabel>Password</FormLabel>
-								<Input
-									{...form.register('password')}
-									startDecorator={<Lock />}
-									type='password'
-								/>
-								<FormHelperText>
-									{form.formState.errors.password?.message}
-								</FormHelperText>
-							</FormControl>
-							<Button
-								type='submit'
-								size='lg'
-								loading={mutation.isPending}
-							>
-								Signin
-							</Button>
-							<Typography level='body-sm' textAlign='center'>
-								Don't have an account yet?{' '}
-								<Link
-									to='/signup'
-									style={{ textDecoration: 'none' }}
-								>
-									Create an account
-								</Link>
-							</Typography>
-						</Stack>
-					</form>
-				</Sheet>
-			</Box>
-		</CssVarsProvider>
+					</Stack>
+				</form>
+			</Sheet>
+		</Box>
 	)
 }

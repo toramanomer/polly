@@ -5,8 +5,6 @@ import { useForm } from 'react-hook-form'
 import {
 	Box,
 	Button,
-	CssBaseline,
-	CssVarsProvider,
 	FormControl,
 	FormHelperText,
 	FormLabel,
@@ -17,13 +15,13 @@ import {
 	Typography
 } from '@mui/joy'
 
-import PersonAdd from '@mui/icons-material/PersonAdd'
 import Email from '@mui/icons-material/Email'
+import Error from '@mui/icons-material/Error'
 import Lock from '@mui/icons-material/Lock'
 import Person from '@mui/icons-material/Person'
-import Error from '@mui/icons-material/Error'
-import VisibilityOff from '@mui/icons-material/VisibilityOff'
+import PersonAdd from '@mui/icons-material/PersonAdd'
 import Visibility from '@mui/icons-material/Visibility'
+import VisibilityOff from '@mui/icons-material/VisibilityOff'
 
 interface SignupError {
 	type: string
@@ -97,139 +95,134 @@ export const Signup = () => {
 	}
 
 	return (
-		<CssVarsProvider defaultColorScheme='dark' defaultMode='dark'>
-			<CssBaseline />
-			<Box
+		<Box
+			sx={{
+				display: 'flex',
+				justifyContent: 'center',
+				alignItems: 'center',
+				height: '100vh'
+			}}
+		>
+			<Sheet
 				sx={{
-					display: 'flex',
-					justifyContent: 'center',
-					alignItems: 'center',
-					height: '100vh'
+					width: '500px',
+					maxWidth: '90vw',
+					p: 5,
+					borderRadius: 'md'
 				}}
 			>
-				<Sheet
-					sx={{
-						width: '500px',
-						maxWidth: '90vw',
-						p: 5,
-						borderRadius: 'md'
-					}}
-				>
-					<Box sx={{ textAlign: 'center', mb: 3 }}>
-						<PersonAdd
-							sx={{ fontSize: 60, color: 'primary.500', mb: 1 }}
-						/>
-						<Typography level='h4' component='h1'>
-							Create Account
-						</Typography>
-					</Box>
+				<Box sx={{ textAlign: 'center', mb: 3 }}>
+					<PersonAdd
+						sx={{ fontSize: 60, color: 'primary.500', mb: 1 }}
+					/>
+					<Typography level='h4' component='h1'>
+						Create Account
+					</Typography>
+				</Box>
 
-					{form.formState.errors.root && (
-						<Typography color='danger' sx={{ mb: 2 }}>
-							{form.formState.errors.root.message}
-						</Typography>
-					)}
-					<form onSubmit={form.handleSubmit(onSubmit)}>
-						<Stack gap={3}>
-							<FormControl
-								size='lg'
-								error={Boolean(form.formState.errors.username)}
+				{form.formState.errors.root && (
+					<Typography color='danger' sx={{ mb: 2 }}>
+						{form.formState.errors.root.message}
+					</Typography>
+				)}
+				<form onSubmit={form.handleSubmit(onSubmit)}>
+					<Stack gap={3}>
+						<FormControl
+							size='lg'
+							error={Boolean(form.formState.errors.username)}
+						>
+							<FormLabel>Username</FormLabel>
+							<Input
+								{...form.register('username')}
+								startDecorator={<Person />}
+							/>
+							<FormHelperText
+								component={Typography}
+								level='title-lg'
+								startDecorator={
+									form.formState.errors.username ? (
+										<Error />
+									) : null
+								}
 							>
-								<FormLabel>Username</FormLabel>
-								<Input
-									{...form.register('username')}
-									startDecorator={<Person />}
-								/>
-								<FormHelperText
-									component={Typography}
-									level='title-lg'
-									startDecorator={
-										form.formState.errors.username ? (
-											<Error />
-										) : null
-									}
-								>
-									{form.formState.errors.username?.message}
-								</FormHelperText>
-							</FormControl>
-							<FormControl
-								size='lg'
-								error={Boolean(form.formState.errors.email)}
+								{form.formState.errors.username?.message}
+							</FormHelperText>
+						</FormControl>
+						<FormControl
+							size='lg'
+							error={Boolean(form.formState.errors.email)}
+						>
+							<FormLabel>Email</FormLabel>
+							<Input
+								{...form.register('email')}
+								startDecorator={<Email />}
+							/>
+							<FormHelperText
+								component={Typography}
+								level='title-lg'
+								startDecorator={
+									form.formState.errors.email ? (
+										<Error />
+									) : null
+								}
 							>
-								<FormLabel>Email</FormLabel>
-								<Input
-									{...form.register('email')}
-									startDecorator={<Email />}
-								/>
-								<FormHelperText
-									component={Typography}
-									level='title-lg'
-									startDecorator={
-										form.formState.errors.email ? (
-											<Error />
-										) : null
-									}
-								>
-									{form.formState.errors.email?.message}
-								</FormHelperText>
-							</FormControl>
-							<FormControl
-								size='lg'
-								error={Boolean(form.formState.errors.password)}
+								{form.formState.errors.email?.message}
+							</FormHelperText>
+						</FormControl>
+						<FormControl
+							size='lg'
+							error={Boolean(form.formState.errors.password)}
+						>
+							<FormLabel>Password</FormLabel>
+							<Input
+								{...form.register('password')}
+								startDecorator={<Lock />}
+								endDecorator={
+									<IconButton
+										onClick={() =>
+											setPasswordVisible(!passwordVisible)
+										}
+									>
+										{passwordVisible ? (
+											<Visibility />
+										) : (
+											<VisibilityOff />
+										)}
+									</IconButton>
+								}
+								type={passwordVisible ? 'text' : 'password'}
+							/>
+							<FormHelperText
+								component={Typography}
+								level='title-lg'
+								startDecorator={
+									form.formState.errors.password ? (
+										<Error />
+									) : null
+								}
 							>
-								<FormLabel>Password</FormLabel>
-								<Input
-									{...form.register('password')}
-									startDecorator={<Lock />}
-									endDecorator={
-										<IconButton
-											onClick={() =>
-												setPasswordVisible(
-													!passwordVisible
-												)
-											}
-										>
-											{passwordVisible ? (
-												<Visibility />
-											) : (
-												<VisibilityOff />
-											)}
-										</IconButton>
-									}
-									type={passwordVisible ? 'text' : 'password'}
-								/>
-								<FormHelperText
-									component={Typography}
-									level='title-lg'
-									startDecorator={
-										form.formState.errors.password ? (
-											<Error />
-										) : null
-									}
-								>
-									{form.formState.errors.password?.message}
-								</FormHelperText>
-							</FormControl>
-							<Button
-								type='submit'
-								size='lg'
-								loading={mutation.isPending}
-							>
-								Signup
-							</Button>
-							<Button
-								onClick={() => navigate('/signin')}
-								component='a'
-								href='/signin'
-								variant='plain'
-								color='neutral'
-							>
-								Already have an account? Sign in
-							</Button>
-						</Stack>
-					</form>
-				</Sheet>
-			</Box>
-		</CssVarsProvider>
+								{form.formState.errors.password?.message}
+							</FormHelperText>
+						</FormControl>
+						<Button
+							type='submit'
+							size='lg'
+							loading={mutation.isPending}
+						>
+							Signup
+						</Button>
+						<Button
+							onClick={() => navigate('/signin')}
+							component='a'
+							href='/signin'
+							variant='plain'
+							color='neutral'
+						>
+							Already have an account? Sign in
+						</Button>
+					</Stack>
+				</form>
+			</Sheet>
+		</Box>
 	)
 }
