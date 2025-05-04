@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
 	Alert,
 	Box,
@@ -9,12 +10,15 @@ import {
 	CircularProgress,
 	Divider,
 	LinearProgress,
+	Modal,
+	ModalClose,
+	ModalDialog,
 	Sheet,
 	Stack,
 	Typography
 } from '@mui/joy'
+import DeleteIcon from '@mui/icons-material/Delete'
 
-import { useState } from 'react'
 import { CreatePoll } from './createPoll'
 
 type PollOption = {
@@ -33,9 +37,9 @@ type Poll = {
 }
 
 export const Home = () => {
+	const queryClient = useQueryClient()
 	const query = useQuery({
 		queryFn: async () => {
-			console.log('queryFn')
 			const response = await fetch('/api/auth/me')
 			const body = await response.json()
 			return body?.token
@@ -43,7 +47,20 @@ export const Home = () => {
 		queryKey: ['token'],
 		retry: false
 	})
-	console.log(query)
+
+	const deleteMutation = useMutation({
+		mutationFn: async (pollId: string) => {
+			const response = await fetch(`/api/polls/${pollId}`, {
+				method: 'DELETE'
+			})
+			if (!response.ok) throw new Error('Failed to delete poll')
+			return response.json()
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['userPolls'] })
+		}
+	})
+
 	const [showCreateForm, setShowCreateForm] = useState(false)
 	const {
 		data: polls,
@@ -124,7 +141,11 @@ export const Home = () => {
 							onSuccess={() => setShowCreateForm(false)}
 						/>
 					) : (
-						<Polls polls={polls} />
+						<Polls
+							polls={polls}
+							onDelete={deleteMutation.mutate}
+							isDeleting={deleteMutation.isPending}
+						/>
 					)}
 				</Stack>
 			</Sheet>
@@ -162,7 +183,17 @@ const PollOption = ({
 	)
 }
 
-const Polls = ({ polls }: { polls: Poll[] | undefined }) => {
+const Polls = ({
+	polls,
+	onDelete,
+	isDeleting
+}: {
+	polls: Poll[] | undefined
+	onDelete: (pollId: string) => void
+	isDeleting: boolean
+}) => {
+	const [pollToDelete, setPollToDelete] = useState<string | null>(null)
+
 	if (!polls?.length)
 		return (
 			<Alert color='neutral' variant='soft'>
@@ -172,88 +203,165 @@ const Polls = ({ polls }: { polls: Poll[] | undefined }) => {
 		)
 
 	return (
-		<Stack spacing={3}>
-			{polls.map(poll => {
-				const isExpired = new Date(poll.expiresAt) < new Date()
-				const createdDate = new Date(
-					poll.createdAt
-				).toLocaleDateString()
-				const expiresDate = new Date(
-					poll.expiresAt
-				).toLocaleDateString()
+		<>
+			<Stack spacing={3}>
+				{polls.map(poll => {
+					const isExpired = new Date(poll.expiresAt) < new Date()
+					const createdDate = new Date(
+						poll.createdAt
+					).toLocaleDateString()
+					const expiresDate = new Date(
+						poll.expiresAt
+					).toLocaleDateString()
 
-				const totalVoteCount = poll.options.reduce(
-					(totalVoteCount, option) => totalVoteCount + option.count,
-					0
-				)
-				return (
-					<Card key={poll.id} variant='outlined'>
-						<CardContent>
-							<Stack spacing={2}>
-								<Stack
-									direction='row'
-									justifyContent='space-between'
-									alignItems='center'
-								>
-									<Typography level='h4'>
-										{poll.question}
-									</Typography>
-									<Typography level='body-sm'>
-										Created: {createdDate}
-									</Typography>
-								</Stack>
-
-								<Stack
-									direction='row'
-									spacing={1}
-									alignItems='center'
-								>
-									<Typography level='body-sm'>
-										Expires: {expiresDate}
-									</Typography>
-									{isExpired && (
-										<Alert
-											color='warning'
-											variant='soft'
-											size='sm'
-										>
-											Expired
-										</Alert>
-									)}
-								</Stack>
-
-								<Divider />
-
+					const totalVoteCount = poll.options.reduce(
+						(totalVoteCount, option) =>
+							totalVoteCount + option.count,
+						0
+					)
+					return (
+						<Card key={poll.id} variant='outlined'>
+							<CardContent>
 								<Stack spacing={2}>
-									{poll.options.map(option => (
-										<PollOption
-											totalVoteCount={totalVoteCount}
-											option={option}
-										/>
-									))}
-								</Stack>
-
-								<Stack
-									direction='row'
-									justifyContent='space-between'
-									alignItems='center'
-								>
-									<Typography level='body-sm'>
-										Total votes: {totalVoteCount}
-									</Typography>
-									<Button
-										variant='outlined'
-										size='sm'
-										onClick={() => {}}
+									<Stack
+										direction='row'
+										justifyContent='space-between'
+										alignItems='center'
 									>
-										View Poll
-									</Button>
+										<Typography level='h4'>
+											{poll.question}
+										</Typography>
+										<Stack
+											direction='row'
+											spacing={1}
+											alignItems='center'
+										>
+											<Typography level='body-sm'>
+												Created: {createdDate}
+											</Typography>
+											<Button
+												variant='soft'
+												color='danger'
+												size='md'
+												onClick={() =>
+													setPollToDelete(poll.id)
+												}
+												disabled={isDeleting}
+											>
+												<DeleteIcon />
+											</Button>
+										</Stack>
+									</Stack>
+
+									<Stack
+										direction='row'
+										spacing={1}
+										alignItems='center'
+									>
+										<Typography level='body-sm'>
+											Expires: {expiresDate}
+										</Typography>
+										{isExpired && (
+											<Alert
+												color='warning'
+												variant='soft'
+												size='sm'
+											>
+												Expired
+											</Alert>
+										)}
+									</Stack>
+
+									<Divider />
+
+									<Stack spacing={2}>
+										{poll.options.map(option => (
+											<PollOption
+												totalVoteCount={totalVoteCount}
+												option={option}
+											/>
+										))}
+									</Stack>
+
+									<Stack
+										direction='row'
+										justifyContent='space-between'
+										alignItems='center'
+									>
+										<Typography level='body-sm'>
+											Total votes: {totalVoteCount}
+										</Typography>
+										<Button
+											variant='outlined'
+											size='sm'
+											onClick={() => {}}
+										>
+											View Poll
+										</Button>
+									</Stack>
 								</Stack>
-							</Stack>
-						</CardContent>
-					</Card>
-				)
-			})}
-		</Stack>
+							</CardContent>
+						</Card>
+					)
+				})}
+			</Stack>
+
+			<Modal
+				open={!!pollToDelete}
+				onClose={() => !isDeleting && setPollToDelete(null)}
+			>
+				<ModalDialog
+					variant='outlined'
+					role='alertdialog'
+					aria-labelledby='delete-dialog-title'
+					aria-describedby='delete-dialog-description'
+				>
+					<ModalClose disabled={isDeleting} />
+					<Typography
+						id='delete-dialog-title'
+						level='h2'
+						startDecorator={<DeleteIcon />}
+						sx={{ color: 'danger.500' }}
+					>
+						Delete Poll
+					</Typography>
+					<Divider />
+					<Typography id='delete-dialog-description' level='body-md'>
+						Are you sure you want to delete this poll? This action
+						cannot be undone.
+					</Typography>
+					<Box
+						sx={{
+							display: 'flex',
+							gap: 1,
+							justifyContent: 'flex-end',
+							mt: 2
+						}}
+					>
+						<Button
+							variant='plain'
+							color='neutral'
+							onClick={() => setPollToDelete(null)}
+							disabled={isDeleting}
+						>
+							Cancel
+						</Button>
+						<Button
+							variant='solid'
+							color='danger'
+							onClick={() => {
+								if (pollToDelete) {
+									onDelete(pollToDelete)
+								}
+							}}
+							loading={isDeleting}
+							disabled={isDeleting}
+						>
+							Delete
+						</Button>
+					</Box>
+				</ModalDialog>
+			</Modal>
+		</>
 	)
 }

@@ -10,6 +10,7 @@ import (
 
 var (
 	ErrPollNotFound        = errors.New("poll not found")
+	ErrNotPollOwner        = errors.New("user is not the owner of the poll")
 	ErrOptionBelongsToPoll = errors.New("option does not belong to the poll")
 	ErrPollExpired         = errors.New("poll expired")
 )

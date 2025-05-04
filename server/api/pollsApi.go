@@ -85,6 +85,55 @@ func (api *API) CreatePoll(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(poll)
 }
 
+func (api *API) DeletePoll(w http.ResponseWriter, r *http.Request) {
+	pollID, err := uuid.Parse(chi.URLParam(r, "pollID"))
+	if err != nil || uuid.Nil == pollID {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{
+			"type":  "invalid_request",
+			"title": "Poll ID is not a valid",
+		})
+		return
+	}
+
+	if err := api.repository.DeletePoll(r.Context(), repository.DeletePollParams{
+		PollID: pollID,
+		UserID: ResolveUserID(r),
+	}); err != nil {
+		switch err {
+		case repository.ErrPollNotFound:
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]string{
+				"type":  "not_found",
+				"title": "Poll not found",
+			})
+		case repository.ErrNotPollOwner:
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(map[string]string{
+				"type":  "forbidden",
+				"title": "You are not the owner of this poll",
+			})
+		default:
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"type":  "internal_server_error",
+				"title": "An internal server error occurred.",
+			})
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Poll deleted successfully",
+	})
+}
+
 func (api *API) GetPollByID(w http.ResponseWriter, r *http.Request) {
 	pollID, err := uuid.Parse(chi.URLParam(r, "pollID"))
 	if err != nil || uuid.Nil == pollID {

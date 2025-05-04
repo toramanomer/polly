@@ -70,20 +70,22 @@ func main() {
 	)
 
 	r.Use(middleware.Logger)
-	r.Route("/api/auth", func(r chi.Router) {
-		r.Post("/signup", a.Signup)
-		r.Post("/signin", a.Signin)
-		r.Post("/signout", a.Signout)
-		r.Get("/me", a.Me)
-	})
+	r.Route("/api", func(r chi.Router) {
+		r.Route("/auth", func(r chi.Router) {
+			r.Post("/signup", a.Signup)
+			r.Post("/signin", a.Signin)
+			r.Post("/signout", a.Signout)
+			r.Get("/me", a.Me)
+		})
+		r.Route("/polls", func(r chi.Router) {
+			withAuth := r.With(api.AuthMiddleware)
+			withAuth.Post("/", a.CreatePoll)
+			withAuth.Get("/", a.GetUserPolls)
+			withAuth.Delete("/{pollID}", a.DeletePoll)
 
-	r.Route("/api/polls", func(r chi.Router) {
-		withAuth := r.With(api.AuthMiddleware)
-		withAuth.Post("/", a.CreatePoll)
-		withAuth.Get("/", a.GetUserPolls)
-
-		r.Get("/{pollID}", a.GetPollByID)
-		r.Post("/{pollID}/vote", a.VoteOnPoll)
+			r.Get("/{pollID}", a.GetPollByID)
+			r.Post("/{pollID}/vote", a.VoteOnPoll)
+		})
 	})
 
 	var (

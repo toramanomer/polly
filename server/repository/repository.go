@@ -124,6 +124,50 @@ func (r *Repository) CreatePollWithOptions(ctx context.Context, poll *Poll) erro
 	return nil
 }
 
+const deletePoll = `
+	WITH
+		to_delete AS (
+			SELECT true AS exists, (user_id = $2) AS is_owner
+			FROM polls
+			WHERE id = $1
+		),
+		deleted	AS (
+			DELETE FROM polls
+			WHERE id = $1 AND user_id = $2
+			RETURNING true AS deleted
+		)
+	SELECT
+		COALESCE ((SELECT exists FROM to_delete), false) AS poll_exists,
+		COALESCE ((SELECT is_owner FROM to_delete), false) AS is_owner,
+		COALESCE ((SELECT deleted FROM deleted), false) AS deleted`
+
+type DeletePollParams struct {
+	PollID uuid.UUID
+	UserID uuid.UUID
+}
+
+func (r *Repository) DeletePoll(ctx context.Context, arg DeletePollParams) error {
+	row := r.db.QueryRow(ctx, deletePoll, arg.PollID, arg.UserID)
+
+	var pollExists, isOwner, deleted bool
+	err := row.Scan(&pollExists, &isOwner, &deleted)
+
+	if err != nil {
+		return fmt.Errorf("error deleting poll: %w", err)
+	}
+
+	switch {
+	case !pollExists:
+		return ErrPollNotFound
+	case !isOwner:
+		return ErrNotPollOwner
+	case !deleted:
+		return errors.New("unknown error occurred while deleting poll")
+	}
+
+	return nil
+}
+
 const getPollWithOptions = `
 	SELECT
 		p.id,
