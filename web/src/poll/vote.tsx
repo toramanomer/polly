@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router'
+import { Turnstile } from '@marsidev/react-turnstile'
 import {
 	Box,
 	Button,
@@ -31,6 +32,7 @@ type Poll = {
 export const Vote = () => {
 	const { pollId } = useParams<{ pollId: string }>()
 	const [selectedOption, setSelectedOption] = useState<string>('')
+	const [token, setToken] = useState<string>('')
 	const {
 		data: poll,
 		isLoading,
@@ -50,7 +52,10 @@ export const Vote = () => {
 		mutationFn: async (optionId: string) => {
 			const response = await fetch(`/api/polls/${pollId}/vote`, {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CF-Turnstile-Token': token
+				},
 				body: JSON.stringify({ optionId })
 			})
 			if (!response.ok) throw new Error('Failed to vote')
@@ -59,7 +64,7 @@ export const Vote = () => {
 	})
 
 	const handleVote = () => {
-		if (!selectedOption) return
+		if (!selectedOption || !token) return
 		mutate(selectedOption)
 	}
 
@@ -157,7 +162,9 @@ export const Vote = () => {
 							<Button
 								size='lg'
 								onClick={handleVote}
-								disabled={!selectedOption || isPending}
+								disabled={
+									!selectedOption || isPending || !token
+								}
 								loading={isPending}
 							>
 								Submit Vote
@@ -168,6 +175,14 @@ export const Vote = () => {
 									Failed to submit vote. Please try again.
 								</Alert>
 							)}
+							<Turnstile
+								siteKey='0x4AAAAAABadXcRKZ2B7dbnQ'
+								onSuccess={setToken}
+								options={{
+									refreshExpired: 'auto',
+									size: 'flexible'
+								}}
+							/>
 						</>
 					)}
 				</Stack>

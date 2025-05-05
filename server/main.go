@@ -84,12 +84,12 @@ func main() {
 			withAuth.Delete("/{pollID}", a.DeletePoll)
 
 			r.Get("/{pollID}", a.GetPollByID)
-			r.Post("/{pollID}/vote", a.VoteOnPoll)
+			r.With(api.WithTurnstileProtection).Post("/{pollID}/vote", a.VoteOnPoll)
 		})
 	})
 
 	var (
-		serverAddr = ":80"
+		serverAddr = ":8000"
 		server     = &http.Server{Addr: serverAddr, Handler: r}
 	)
 
